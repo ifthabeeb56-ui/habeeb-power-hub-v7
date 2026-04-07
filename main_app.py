@@ -18,4 +18,3 @@ with tab2:
 with tab3:
     st.header("Custom Watchlist")
     st.write("നിങ്ങൾ നിരീക്ഷിക്കുന്ന സ്റ്റോക്കുകളുടെ ലൈവ് ഡാറ്റ ഇവിടെ ക്രമീകരിക്കാം.")
-    
