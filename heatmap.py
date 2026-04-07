@@ -1,41 +1,58 @@
 import streamlit as st
 import plotly.express as px
+import pandas as pd
 from utils import get_live_price
 
 def show_heatmap(portfolio_df):
-    st.subheader("📊 Portfolio Heatmap")
+    st.subheader("🔍 Portfolio Heatmap Analysis")
     
-    if portfolio_df.empty:
+    if portfolio_df is None or portfolio_df.empty:
         st.warning("പോർട്ട്‌ഫോളിയോയിൽ സ്റ്റോക്കുകൾ ഒന്നുമില്ല. ആദ്യം സ്റ്റോക്കുകൾ ആഡ് ചെയ്യുക.")
         return
 
-    # ഹീറ്റ്മാപ്പിന് ആവശ്യമായ ഡാറ്റ തയ്യാറാക്കുന്നു
-    # ഇവിടെ നമ്മൾ ഓരോ സ്റ്റോക്കിന്റെയും നിലവിലെ വിലയും ലാഭശതമാനവും കണക്കാക്കുന്നു
+    # ഹീറ്റ്മാപ്പിന് ആവശ്യമായ ഡാറ്റ കണക്കാക്കുന്നു
     plot_data = []
-    for index, row in portfolio_df.iterrows():
-        current_price = get_live_price(row['symbol'])
-        investment = row['buy_price'] * row['qty']
-        current_value = current_price * row['qty']
-        pnl_pct = ((current_value - investment) / investment) * 100 if investment > 0 else 0
-        
-        plot_data.append({
-            "Symbol": row['symbol'],
-            "Investment": investment,
-            "PnL %": pnl_pct,
-            "Current Price": current_price
-        })
+    
+    with st.spinner("Fetching latest prices for heatmap..."):
+        for _, row in portfolio_df.iterrows():
+            symbol = row['symbol']
+            qty = row['qty']
+            buy_price = row['buy_price']
+            
+            current_price = get_live_price(symbol)
+            
+            if current_price > 0:
+                investment = buy_price * qty
+                current_value = current_price * qty
+                pnl = current_value - investment
+                pnl_pct = (pnl / investment) * 100 if investment > 0 else 0
+                
+                plot_data.append({
+                    "Symbol": symbol,
+                    "Investment": round(investment, 2),
+                    "Current Value": round(current_value, 2),
+                    "PnL %": round(pnl_pct, 2),
+                    "Live Price": current_price
+                })
 
-    import pandas as pd
+    if not plot_data:
+        st.error("ഡാറ്റ ലഭ്യമാക്കാൻ കഴിഞ്ഞില്ല.")
+        return
+
     df_plot = pd.DataFrame(plot_data)
 
-    # Treemap (Heatmap) നിർമ്മിക്കുന്നു
+    # Plotly Treemap നിർമ്മാണം
     fig = px.treemap(
         df_plot,
         path=['Symbol'],
         values='Investment',
         color='PnL %',
-        color_continuous_scale='RdYlGn', # ചുവപ്പ് (നഷ്ടം), പച്ച (ലാഭം)
-        hover_data=['Current Price', 'PnL %']
+        color_continuous_scale='RdYlGn',  # നഷ്ടത്തിന് ചുവപ്പും ലാഭത്തിന് പച്ചയും
+        color_continuous_midpoint=0,
+        hover_data=['Live Price', 'Investment', 'PnL %'],
+        height=500
     )
 
+    fig.update_layout(margin=dict(t=10, l=10, r=10, b=10))
     st.plotly_chart(fig, use_container_width=True)
+            
