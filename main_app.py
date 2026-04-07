@@ -1,20 +1,25 @@
 import streamlit as st
+from portfolio import show_portfolio, add_stock_form
 
 st.set_page_config(page_title="Power Hub v7", layout="wide")
 
 st.title("Habeeb's Power Hub v7")
 
-# ടാബുകൾ നിർമ്മിക്കുന്നു
+# ടാബുകൾ സെറ്റ് ചെയ്യുന്നു
 tab1, tab2, tab3 = st.tabs(["📊 Portfolio", "🔥 Heat Map", "👀 Watchlist"])
 
 with tab1:
-    st.header("Your Portfolio")
-    st.write("ഇവിടെ നിങ്ങളുടെ സ്റ്റോക്ക് വിവരങ്ങൾ വരും.")
+    # സ്റ്റോക്ക് ആഡ് ചെയ്യാനുള്ള ഫോം
+    add_stock_form()
+    st.divider()
+    # പോർട്ട്‌ഫോളിയോ ലിസ്റ്റ് കാണിക്കാൻ
+    show_portfolio()
 
 with tab2:
     st.header("Market Heat Map")
-    st.write("സെക്ടർ തിരിച്ചുള്ള സ്റ്റോക്ക് പെർഫോമൻസ് ഇവിടെ കാണാം.")
+    st.info("ഈ ഫീച്ചർ ഉടൻ ലഭ്യമാകും.")
 
 with tab3:
-    st.header("Custom Watchlist")
-    st.write("നിങ്ങൾ നിരീക്ഷിക്കുന്ന സ്റ്റോക്കുകളുടെ ലൈവ് ഡാറ്റ ഇവിടെ ക്രമീകരിക്കാം.")
+    st.header("Watchlist")
+    st.info("വാച്ച് ലിസ്റ്റ് സെറ്റ് ചെയ്യാനുള്ള കോഡ് അടുത്ത സ്റ്റെപ്പിൽ ചെയ്യാം.")
+    
