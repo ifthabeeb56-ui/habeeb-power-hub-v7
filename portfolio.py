@@ -2,64 +2,59 @@ import streamlit as st
 import pandas as pd
 from database import get_portfolio_db, add_stock_db
 from utils import get_live_price
+from datetime import datetime
 
 def show_portfolio():
     df = get_portfolio_db()
-    
     if df.empty:
         st.info("പോർട്ട്‌ഫോളിയോയിൽ സ്റ്റോക്കുകൾ ഒന്നുമില്ല.")
         return
 
-    # --- Summary Section ---
     portfolio_data = []
-    total_inv = 0
-    total_val = 0
-
     for _, row in df.iterrows():
-        live_price = get_live_price(row['symbol'])
+        ltp = get_live_price(row['symbol'])
         inv = row['buy_price'] * row['qty']
-        curr_val = live_price * row['qty']
+        val = ltp * row['qty']
+        # നെറ്റ് പ്രോഫിറ്റ് = (നിലവിലെ വില + ഡിവിഡന്റ്) - (വാങ്ങിയ വില + ടാക്സ്)
+        pnl = (val + row['dividend']) - (inv + row['tax'])
         
-        total_inv += inv
-        total_val += curr_val
-
         portfolio_data.append({
+            "Account": row['account'],
             "Stock": row['symbol'],
             "Qty": row['qty'],
-            "Buy Price": f"₹{row['buy_price']:.2f}",
-            "LTP": f"₹{live_price:.2f}",
-            "Current Value": f"₹{curr_val:.2f}",
-            "P&L": f"₹{(curr_val - inv):.2f}"
+            "Buy Price": row['buy_price'],
+            "LTP": ltp,
+            "Investment": inv,
+            "Current Value": val,
+            "P&L": pnl,
+            "P%": (pnl/inv*100) if inv > 0 else 0
         })
 
-    # കാർഡുകൾ കാണിക്കുന്നു
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total Investment", f"₹{total_inv:,.2f}")
-    c2.metric("Current Value", f"₹{total_val:,.2f}", f"{(total_val-total_inv):,.2f}")
-    c3.metric("Total Gain %", f"{((total_val-total_inv)/total_inv*100 if total_inv>0 else 0):.2f}%")
-
-    st.markdown("---")
+    p_df = pd.DataFrame(portfolio_data)
     
-    # സ്റ്റോക്ക് ലിസ്റ്റ് കാണിക്കുന്നു
-    st.dataframe(pd.DataFrame(portfolio_data), use_container_width=True)
+    # അക്കൗണ്ട് തിരിച്ചുള്ള സംഗ്രഹം (Summary)
+    acc = st.selectbox("Select Account View", ["All", "Habeeb", "RISU"])
+    if acc != "All":
+        p_df = p_df[p_df['Account'] == acc]
+
+    st.dataframe(p_df.style.format(precision=2), use_container_width=True)
 
 def add_stock_form():
-    # സ്വിച്ച് (Toggle) ഉപയോഗിച്ച് ഫോം കാണിക്കണോ എന്ന് തീരുമാനിക്കാം
-    show_form = st.toggle("➕ Add New Stock Form")
-    
-    if show_form:
-        with st.expander("Enter Stock Details", expanded=True):
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                symbol = st.text_input("Symbol (eg: RELIANCE.NS)")
-            with col2:
-                price = st.number_input("Buy Price", min_value=0.0)
-            with col3:
-                qty = st.number_input("Quantity", min_value=1)
+    if st.toggle("➕ Add Stock"):
+        with st.form("add_form"):
+            col1, col2 = st.columns(2)
+            symbol = col1.text_input("Symbol (eg: RELIANCE.NS)")
+            b_date = col2.date_input("Purchase Date", datetime.now())
             
-            if st.button("Save to Portfolio"):
-                if symbol:
-                    add_stock_db(symbol.upper(), price, qty)
-                    st.success(f"{symbol} ആഡ് ചെയ്തു!")
-                    st.rerun()
-    
+            cat = col1.selectbox("Category", ["Equity", "ETF", "Mutual Fund"])
+            acc = col2.selectbox("Account", ["Habeeb", "RISU"])
+            
+            price = col1.number_input("Buy Price", min_value=0.0)
+            qty = col2.number_input("Qty", min_value=1)
+            tax = col1.number_input("Tax", min_value=0.0)
+            
+            if st.form_submit_button("Save Stock"):
+                add_stock_db(symbol.upper(), price, qty, cat, acc, tax, str(b_date))
+                st.success("Saved!")
+                st.rerun()
+        
