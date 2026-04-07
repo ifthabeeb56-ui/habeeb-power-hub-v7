@@ -23,3 +23,5 @@ with tabs[2]:
 
 with tabs[3]:
     st.info("News ഫീച്ചർ ഉടനെ ആഡ് ചെയ്യുന്നതാണ്...")
+from heatmap import show_heatmap
+from database import get_portfolio_db
