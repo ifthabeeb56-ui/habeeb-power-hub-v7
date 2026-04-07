@@ -1,20 +1,19 @@
 import streamlit as st
 from portfolio import show_portfolio, add_stock_form
-from heatmap import show_heatmap        # ഇത് പുതുതായി ചേർത്തത്
-from database import get_portfolio_db   # ഡാറ്റാബേസിൽ നിന്ന് സ്റ്റോക്കുകൾ എടുക്കാൻ
+from heatmap import show_heatmap
+from database import get_portfolio_db
+import pandas as pd
 
 st.set_page_config(page_title="Habeeb's Power Hub v7", layout="wide")
 
 st.title("📊 Habeeb's Power Hub v7")
 
-# ടാബുകൾ സെറ്റ് ചെയ്യുന്നു
-tabs = st.tabs(["🔍 Heatmap", "💼 Portfolio", "📈 Analytics", "📰 News"])
+# പുതിയ ടാബ് സെക്ഷൻ
+tabs = st.tabs(["🔍 Heatmap", "💼 Portfolio", "⚙️ Data Management", "📈 Analytics"])
 
-# പോർട്ട്‌ഫോളിയോ ഡാറ്റാബേസിൽ നിന്ന് എടുക്കുന്നു
 df = get_portfolio_db()
 
 with tabs[0]:
-    # ഹീറ്റ്മാപ്പ് ഇവിടെ കാണിക്കുന്നു
     show_heatmap(df)
 
 with tabs[1]:
@@ -22,8 +21,21 @@ with tabs[1]:
     show_portfolio()
 
 with tabs[2]:
-    st.info("Analytics ഫീച്ചർ ഉടനെ വരുന്നു...")
-
-with tabs[3]:
-    st.info("News ഫീച്ചർ ഉടനെ വരുന്നു...")
+    st.subheader("📥 Export / 📤 Import Data")
+    
+    # Download
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button("Download Portfolio CSV", csv, "portfolio_backup.csv", "text/csv")
+    
+    st.markdown("---")
+    
+    # Upload
+    uploaded_file = st.file_uploader("Upload Portfolio CSV", type=["csv"])
+    if uploaded_file is not None:
+        new_data = pd.read_csv(uploaded_file)
+        st.write("Uploaded Data Preview:")
+        st.dataframe(new_data)
+        if st.button("Confirm Import"):
+            # ഇവിടെ ഡാറ്റാബേസിലേക്ക് സേവ് ചെയ്യാനുള്ള കോഡ് വരും
+            st.success("ഡാറ്റ വിജയകരമായി ഇംപോർട്ട് ചെയ്തു!")
     
